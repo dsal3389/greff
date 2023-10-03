@@ -2,7 +2,7 @@
 its like `strawberry` but its not, and its a plate :)
 
 ## what is it
-a class orianted python library to build python classes from graphql api, just build
+a class orianted python library to build graphql python client, just build
 you class in python, query them, and the library will create the instances of those classes
 
 ## current stage

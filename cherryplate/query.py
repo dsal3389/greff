@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from .type import Type
 from .field import Field
+from .functions import implement_graphql_type_factory
 
 if TYPE_CHECKING:
     from .client import Client
@@ -45,7 +46,8 @@ class Query:
                 )
 
             for attrs in instance_attrs:
-                yield type_(**attrs)
+                __typename = attrs.pop("__typename", "")
+                yield implement_graphql_type_factory(type_, __typename=__typename, **attrs)
 
     def __next__(self) -> Type:
         return next(self.__iter__())

@@ -1,2 +1,2 @@
-from .type import Type, type_metadata
+from .type import Type
 from .client import Client, ClientProtocol

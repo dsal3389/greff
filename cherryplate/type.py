@@ -51,17 +51,3 @@ class Type(Generic[T], metaclass=_CherryPlateTypeMedataClass):
     def __init_subclass__(cls) -> None:
         _process_type_cls(cls)
 
-    def __new__(cls, *args, **kwargs) -> Type:
-        # the `__typename` is usually entered when we create that `Type`
-        # instance with `Query`, this help us return the correct class instance
-        # if it implement multiple different classes
-        __typename = kwargs.pop("__typename", None)
-
-        if __typename is not None:
-            implemented_type = cls.__implements__.get(__typename)
-
-            if implemented_type is not None:
-                return object.__new__(implemented_type)
-        return object.__new__(cls)
-
-

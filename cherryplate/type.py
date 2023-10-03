@@ -8,14 +8,6 @@ from .typing import is_classvar
 T = TypeVar("T")
 
 
-def _process_type_metadata(cls: type[Type], query_name: str) -> type[Type]:
-    if not query_name:
-        cls.__queryname__ = cls.__name__
-    else:
-        cls.__queryname__ = query_name
-    return cls
-
-
 def _process_type_cls(cls: type[Type]) -> None:
     cls.__implements__ = dict()
 
@@ -73,14 +65,3 @@ class Type(Generic[T], metaclass=_CherryPlateTypeMedataClass):
         return object.__new__(cls)
 
 
-def type_metadata(
-    cls: type[Type] | None = None,
-    /,
-    query_name: str | None = "",
-) -> type[Type]:
-    def _type_metadata(cls: type[Type]) -> cls:
-        return _process_type_metadata(cls, query_name=query_name)
-
-    if cls is not None:
-        return _type_metadata(cls)
-    return _type_metadata

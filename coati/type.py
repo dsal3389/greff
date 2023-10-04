@@ -31,16 +31,16 @@ def _process_type_cls(cls: type[Type]) -> None:
             pass
 
 
-class _CherryPlateTypeMedataClass(type):
+class _CoatiTypeMedataClass(type):
     registered_types = {}
 
     def __new__(cls, name: str, bases: tuple[type], attrs: dict) -> type:
-        cherryplate_type = super().__new__(cls, name, bases, attrs)
-        cls.registered_types[name] = cherryplate_type
-        return cherryplate_type
+        graphql_type = super().__new__(cls, name, bases, attrs)
+        cls.registered_types[name] = graphql_type
+        return graphql_type
 
 
-class Type(Generic[T], metaclass=_CherryPlateTypeMedataClass):
+class Type(Generic[T], metaclass=_CoatiTypeMedataClass):
     __queryname__: str = ""
     __implements__: dict[str, type[Type]] = {}
     __fields__: dict[Field] = {}

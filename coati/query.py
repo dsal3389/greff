@@ -1,4 +1,5 @@
 from __future__ import annotations
+import enum
 from typing import TYPE_CHECKING, Iterable
 
 from .type import Type
@@ -9,12 +10,23 @@ if TYPE_CHECKING:
     from .client import Client
 
 
+class QueryOP:
+    FRAGMENT_REF = enum.auto()
+    ARGUMENTS = enum.auto()
+    ON = enum.auto()
+
+
 class Query:
     def __init__(
-        self, client: Client | None, query: Iterable[tuple[type[Type], Field, ...]]
+        self, 
+        client: Client | None, 
+        query: Iterable[tuple[type[Type], Field, ...]],
+        fragments: tuple[str, tuple[...]]
     ) -> None:
         self._client = client
         self._query = query
+        self._fragments = fragments
+
         self._queryname_to_type = self._process_queryname_to_type()
         self._last_response: dict | None = None
 
@@ -71,7 +83,7 @@ class Query:
         type_, type_fields = type_query_list
 
         if not issubclass(type_, Type):
-            raise TypeError(f"queried type does not inherit from `cherryplate.Type`")
+            raise TypeError(f"queried type does not inherit from `coati.Type`")
 
         yield type_.__queryname__
 

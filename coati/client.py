@@ -9,8 +9,8 @@ class ClientProtocol:
     def mutate_request(self, mutate: str) -> dict:
         ...
 
-    def query(self, query) -> Query:
-        return Query(client=self, query=query)
+    def query(self, query, fragments = None) -> Query:
+        return Query(client=self, query=query, fragments=fragments)
 
 
 class Client(ClientProtocol):

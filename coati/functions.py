@@ -5,7 +5,7 @@ def implement_graphql_type_factory(cls: type[Type], /, *, __typename: str = "", 
     """returns the correct class type base on the given `__typename`"""
     if not issubclass(cls, Type):
         raise TypeError(
-            f"given class to `implement_graphql_type` does not inherit from `cherryplate.Type`"
+            f"given class to `implement_graphql_type` does not inherit from `coati.Type`"
         )
 
     type_cls = cls.__implements__.get(__typename)

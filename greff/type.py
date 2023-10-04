@@ -11,11 +11,14 @@ T = TypeVar("T")
 def _process_type_cls(cls: type[Type]) -> None:
     cls.__implements__ = dict()
 
+    if not cls.__typename__:
+        cls.__typename__ = cls.__name__
+
     # if current `Type` is inheriting from another `Type`
     # then its a graphql implementation
     for parent in cls.__mro__[1:]:
         if parent not in (Type, object) and issubclass(parent, Type):
-            parent.__implements__[cls.__name__] = cls
+            parent.__implements__[cls.__typename__] = cls
 
     for field_name, field_type in cls.__annotations__.items():
         if field_name.startswith("__") or is_classvar(field_type):
@@ -41,7 +44,9 @@ class _GreffTypeMedataClass(type):
 
 
 class Type(Generic[T], metaclass=_GreffTypeMedataClass):
+    __mutatename__: str = ""
     __queryname__: str = ""
+    __typename__: str = ""
     __implements__: dict[str, type[Type]] = {}
     __fields__: dict[Field] = {}
 

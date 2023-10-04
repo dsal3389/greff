@@ -11,22 +11,24 @@ in the current stage its not ready for release, but you can see the `vision` sec
 ## vision / example
 ```py
 import requests
-import greff
+import greff as ff
 
 
-class ParentAuthor(greff.Type):
+class ParentAuthor(ff.Type):
     __queryname__ = "authors"
+    __typename__ = "Parent"
 
     name: str
     age: int = 0
 
 
 class Author(ParentAuthor):
+    __typename__ = "Author"
     extra_field: str
 
 
 class SimpleAuthor(ParentAuthor):
-    pass
+    __typename__ = "SimpleAuthor"
 
 
 # we implement the graphql posting function ourself
@@ -37,20 +39,29 @@ def _request_graphql(query) -> dict:
     return response.json()
 
 # create our charryplate graphql client
-graphql = greff.Client(query_request=_request_graphql)
+graphql = ff.Client(query_request=_request_graphql)
 
 # graphql equivelent
-#  {
+# query {
 #   authors {
-#     name,
-#     __typename
+#     ... frag
 #   }
 # }
-authors = graphql.query((
-    (ParentAuthor, (
-        Author.name,
-    )),
-))
+# fragment frag on Author {
+#   name
+# }
+# 
+query = graphql.query((
+        (ParentAuthor, (
+            ff.fragment_ref("frag"),
+        )),
+    ),
+    fragments={
+        ff.fragment("frag", on=Author): (
+            Author.name,
+        ),
+    }
+)
 
 # graphql response 
 # {
@@ -63,7 +74,7 @@ authors = graphql.query((
 #     ]
 #   }
 # }
-for author in authors:
+for author in query:
     print(type(author), author.name)
 ```
 

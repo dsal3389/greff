@@ -31,7 +31,7 @@ def _process_type_cls(cls: type[Type]) -> None:
             pass
 
 
-class _CoatiTypeMedataClass(type):
+class _GreffTypeMedataClass(type):
     registered_types = {}
 
     def __new__(cls, name: str, bases: tuple[type], attrs: dict) -> type:
@@ -40,7 +40,7 @@ class _CoatiTypeMedataClass(type):
         return graphql_type
 
 
-class Type(Generic[T], metaclass=_CoatiTypeMedataClass):
+class Type(Generic[T], metaclass=_GreffTypeMedataClass):
     __queryname__: str = ""
     __implements__: dict[str, type[Type]] = {}
     __fields__: dict[Field] = {}

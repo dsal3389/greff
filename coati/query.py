@@ -83,7 +83,7 @@ class Query:
         type_, type_fields = type_query_list
 
         if not issubclass(type_, Type):
-            raise TypeError(f"queried type does not inherit from `coati.Type`")
+            raise TypeError(f"queried type does not inherit from `greff.Type`")
 
         yield type_.__queryname__
 

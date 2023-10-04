@@ -1,4 +1,4 @@
-# coati
+# greff
 I wanted an animal name, but most of them already used in pypi :(
 
 ## what is it
@@ -11,10 +11,10 @@ in the current stage its not ready for release, but you can see the `vision` sec
 ## vision / example
 ```py
 import requests
-import coati
+import greff
 
 
-class ParentAuthor(coati.Type):
+class ParentAuthor(greff.Type):
     __queryname__ = "authors"
 
     name: str
@@ -37,7 +37,7 @@ def _request_graphql(query) -> dict:
     return response.json()
 
 # create our charryplate graphql client
-graphql = coati.Client(query_request=_request_graphql)
+graphql = greff.Client(query_request=_request_graphql)
 
 # graphql equivelent
 #  {
@@ -89,5 +89,5 @@ if you look closely at the response
 ```
 
 `ParentAuthor` is implementor for `Author` and `SmallAuthor` and in our query the `__typename` 
-returned `Author`, so coati automatically created the correct python instace
+returned `Author`, so greff automatically created the correct python instace
 

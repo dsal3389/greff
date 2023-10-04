@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "coati"
+name = "greff"
 version = "0.0.1"
 description = ""
 authors = ["daniel sonbolian <dsal3389@gmail.com>"]

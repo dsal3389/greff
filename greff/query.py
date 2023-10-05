@@ -36,10 +36,10 @@ def fragment_ref(name: str) -> tuple[QueryOP, str]:
 
 class Query:
     def __init__(
-        self, 
-        client: Client | None, 
+        self,
         query: Iterable[tuple[type[Type], Field, ...]],
-        fragments: dict[tuple, tuple[...]]
+        fragments: dict[tuple, tuple[...]],
+        client: Client | None = None,
     ) -> None:
         self._client = client
         self._query = query
@@ -79,7 +79,9 @@ class Query:
                 # we pop the `__typename` from the data
                 # because we don't want to pass it to the instance as argument
                 __typename = attrs.pop("__typename", "")
-                yield implement_graphql_type_factory(type_, __typename=__typename, **attrs)
+                yield implement_graphql_type_factory(
+                    type_, __typename=__typename, **attrs
+                )
 
     def serialize(self) -> str:
         """serialize given query to string"""
@@ -103,12 +105,14 @@ class Query:
             query_op, *v = fragment
             if query_op != QueryOP.FRAGMENT:
                 raise ValueError(f"expected `QueryOP.FRAGMENT`, but got {query_op}")
-            
+
             fragment_name, fragment_on_type = v
             yield self._serialize_query_op(fragment, allowed_ops=(QueryOP.FRAGMENT,))
             yield from self._serialize_query_fields(fragment_query)
 
-    def _serialize_type_query(self, type_query_list: tuple[Type, tuple[Field | str]]) -> Iterable[str]:
+    def _serialize_type_query(
+        self, type_query_list: tuple[Type, tuple[Field | str]]
+    ) -> Iterable[str]:
         if len(type_query_list) < 2:
             raise ValueError()
 
@@ -116,10 +120,10 @@ class Query:
 
         if isinstance(type_or_op, (tuple, list, set)):
             if not self._is_query_op(type_or_op):
-                raise ValueError(
-                    f"first argument in query should be the graphql type"
-                )
-            yield self._serialize_query_op(type_or_op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON))
+                raise ValueError(f"first argument in query should be the graphql type")
+            yield self._serialize_query_op(
+                type_or_op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
+            )
         else:
             if not issubclass(type_or_op, Type):
                 raise TypeError(f"queried type does not inherit from `greff.Type`")
@@ -150,10 +154,10 @@ class Query:
         yield ",__typename}"
 
     def _serialize_query_op(
-        self, 
-        op_data: tuple[QueryOP, ...], 
-        *, 
-        allowed_ops: QueryOP | tuple[QueryOP] = QueryOP 
+        self,
+        op_data: tuple[QueryOP, ...],
+        *,
+        allowed_ops: QueryOP | tuple[QueryOP] = QueryOP,
     ) -> str:
         """serializes unique query operations to graphql string"""
         op, *data = op_data
@@ -169,10 +173,10 @@ class Query:
             return f"fragment {fragment_name} on {fragment_on_type.__typename__}"
         if op == QueryOP.ARGUMENT:
             type_, kwargs = data
-            serialized_arguments = ''.join(f'{k}:"{v}"' for k,v in kwargs.items())
+            serialized_arguments = "".join(f'{k}:"{v}"' for k, v in kwargs.items())
             return f"{type_.__queryname__}({serialized_arguments})"
         # testings
-        raise Exception() 
+        raise Exception()
 
     def _is_query_op(self, o: Iterable[Any]) -> bool:
         """returns a boolean value indicating if given iterable is a unique query operation"""
@@ -188,7 +192,9 @@ class Query:
                 op, *_ = type_or_op
 
                 if op not in (QueryOP.ARGUMENT, QueryOP.ON):
-                    raise QueryOperationException(op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON))
+                    raise QueryOperationException(
+                        op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
+                    )
                 type_ = _[0]
             else:
                 if not issubclass(type_or_op, Type):

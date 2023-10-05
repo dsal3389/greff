@@ -55,4 +55,3 @@ class Type(Generic[T], metaclass=_GreffTypeMedataClass):
 
     def __init_subclass__(cls) -> None:
         _process_type_cls(cls)
-

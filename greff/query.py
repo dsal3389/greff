@@ -18,8 +18,11 @@ class QueryOP(enum.Enum):
     ON = enum.auto()
 
 
+# TODO: support if given `type_` is a `Field`
+
+
 def on(type_: type[Type]) -> tuple[QueryOP, type[Type]]:
-    return (QueryOP, type_)
+    return (QueryOP.ON, type_)
 
 
 def argument(type_: type[Type], **arguments) -> tuple[QueryOP, type[Type], dict]:
@@ -111,7 +114,7 @@ class Query:
             yield from self._serialize_query_fields(fragment_query)
 
     def _serialize_type_query(
-        self, type_query_list: tuple[Type, tuple[Field | str]]
+        self, type_query_list: tuple[Type, tuple[Field | str]], is_subfield: bool = False
     ) -> Iterable[str]:
         if len(type_query_list) < 2:
             raise ValueError()
@@ -129,10 +132,14 @@ class Query:
             # inside a sub field
             if not type_field_or_op.is_graphql_reference:
                 raise TypeError(
-                    f"given value for subfield (`{type_field_or_op.name}`) must reference a valid graphql type"
+                    f"given value for subfield `{type_field_or_op.name}` must reference a valid graphql type"
                 )
             yield type_field_or_op.name
         else:
+            if is_subfield:
+                raise TypeError(
+                    f"cannot provide a standalone graphql field as a value to a subfield"
+                )
             if not issubclass(type_field_or_op, Type):
                 raise TypeError(f"queried type does not inherit from `greff.Type`")
             yield type_field_or_op.__queryname__
@@ -156,7 +163,7 @@ class Query:
                 else:
                     # if its a nested field in the fields, it means
                     # its a subfield, and we should serialize it like regular query
-                    yield from self._serialize_type_query(field)
+                    yield from self._serialize_type_query(field, is_subfield=True)
             elif isinstance(field, (str, int, Field)):
                 yield buf + str(field)
         yield ",__typename}"
@@ -172,14 +179,14 @@ class Query:
         if not op in allowed_ops:
             raise QueryOperationException(op, allowed_ops)
 
-        if op == QueryOP.ON:
+        if op is QueryOP.ON:
             return f"... on {data[0].__queryname__}"
-        if op == QueryOP.FRAGMENT_REF:
+        if op is QueryOP.FRAGMENT_REF:
             return f"... {data[0]}"
-        if op == QueryOP.FRAGMENT:
+        if op is QueryOP.FRAGMENT:
             fragment_name, fragment_on_type = data
             return f"fragment {fragment_name} on {fragment_on_type.__typename__}"
-        if op == QueryOP.ARGUMENT:
+        if op is QueryOP.ARGUMENT:
             type_, kwargs = data
             serialized_arguments = "".join(f'{k}:"{v}"' for k, v in kwargs.items())
             return f"{type_.__queryname__}({serialized_arguments})"

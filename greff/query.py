@@ -138,7 +138,7 @@ class Query:
         else:
             if is_subfield:
                 raise TypeError(
-                    f"cannot provide a standalone graphql field as a value to a subfield"
+                    f"cannot provide a standalone graphql field as a value to a subfield, given type is `{type_field_or_op}`"
                 )
             if not issubclass(type_field_or_op, Type):
                 raise TypeError(f"queried type does not inherit from `greff.Type`")
@@ -195,7 +195,7 @@ class Query:
 
     def _is_query_op(self, o: Iterable[Any]) -> bool:
         """returns a boolean value indicating if given iterable is a unique query operation"""
-        return len(o) > 1 and o[0] is type and issubclass(o[0], QueryOP)
+        return len(o) > 1 and o[0] is not type and isinstance(o[0], QueryOP)
 
     def _process_queryname_to_type(self) -> dict[str, type[Type]]:
         map_ = {}

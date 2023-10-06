@@ -34,7 +34,7 @@ def _process_type_cls(cls: type[Type]) -> None:
             pass
 
 
-class _GreffTypeMedataClass(type):
+class GreffTypeMedataClass(type):
     registered_types = {}
 
     def __new__(cls, name: str, bases: tuple[type], attrs: dict) -> type:
@@ -43,7 +43,7 @@ class _GreffTypeMedataClass(type):
         return graphql_type
 
 
-class Type(Generic[T], metaclass=_GreffTypeMedataClass):
+class Type(Generic[T], metaclass=GreffTypeMedataClass):
     __mutatename__: str = ""
     __queryname__: str = ""
     __typename__: str = ""

@@ -116,18 +116,26 @@ class Query:
         if len(type_query_list) < 2:
             raise ValueError()
 
-        type_or_op, type_fields = type_query_list
+        type_field_or_op, type_fields = type_query_list
 
-        if isinstance(type_or_op, (tuple, list, set)):
-            if not self._is_query_op(type_or_op):
+        if isinstance(type_field_or_op, (tuple, list, set)):
+            if not self._is_query_op(type_field_or_op):
                 raise ValueError(f"first argument in query should be the graphql type")
             yield self._serialize_query_op(
-                type_or_op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
+                type_field_or_op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
             )
+        elif isinstance(type_field_or_op, Field):
+            # when the given type is a `Field` we are probably
+            # inside a sub field
+            if not type_field_or_op.is_graphql_reference:
+                raise TypeError(
+                    f"given value for subfield (`{type_field_or_op.name}`) must reference a valid graphql type"
+                )
+            yield type_field_or_op.name
         else:
-            if not issubclass(type_or_op, Type):
+            if not issubclass(type_field_or_op, Type):
                 raise TypeError(f"queried type does not inherit from `greff.Type`")
-            yield type_or_op.__queryname__
+            yield type_field_or_op.__queryname__
         yield from self._serialize_query_fields(type_fields)
 
     def _serialize_query_fields(self, fields: tuple[Field | str]) -> Iterable[str]:
@@ -180,7 +188,7 @@ class Query:
 
     def _is_query_op(self, o: Iterable[Any]) -> bool:
         """returns a boolean value indicating if given iterable is a unique query operation"""
-        return len(o) > 1 and o[0] in QueryOP
+        return len(o) > 1 and o[0] is type and issubclass(o[0], QueryOP)
 
     def _process_queryname_to_type(self) -> dict[str, type[Type]]:
         map_ = {}

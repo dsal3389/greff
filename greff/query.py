@@ -18,18 +18,15 @@ class QueryOP(enum.Enum):
     ON = enum.auto()
 
 
-# TODO: support if given `type_` is a `Field`
-
-
-def on(type_: type[Type]) -> tuple[QueryOP, type[Type]]:
+def on(type_: type[Type] | Field) -> tuple[QueryOP, type[Type]]:
     return (QueryOP.ON, type_)
 
 
-def argument(type_: type[Type], **arguments) -> tuple[QueryOP, type[Type], dict]:
+def argument(type_: type[Type] | Field, **arguments) -> tuple[QueryOP, type[Type], dict]:
     return (QueryOP.ARGUMENT, type_, arguments)
 
 
-def fragment(name: str, *, on: type[Type]) -> tuple[QueryOP, str, type[Type]]:
+def fragment(name: str, *, on: type[Type] | Field) -> tuple[QueryOP, str, type[Type]]:
     return (QueryOP.FRAGMENT, name, on)
 
 
@@ -134,7 +131,7 @@ class Query:
                 raise TypeError(
                     f"given value for subfield `{type_field_or_op.name}` must reference a valid graphql type"
                 )
-            yield type_field_or_op.name
+            yield type_field_or_op.__queryname__
         else:
             if is_subfield:
                 raise TypeError(

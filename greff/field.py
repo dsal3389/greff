@@ -28,6 +28,14 @@ class Field:
         return self._name
 
     @property
+    def __queryname__(self) -> str:
+        if not self.is_graphql_reference:
+            raise TypeError(
+                f"field does not support `__queryname__` since type doesn't reference a graphql type"
+            )
+        return self.name
+
+    @property
     def type_(self) -> type | UnsetType:
         return getattr(self, "_type", UNSET)
     

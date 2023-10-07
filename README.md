@@ -6,7 +6,8 @@ a class orianted python library to build graphql python client, just build
 you class in python, query them, and the library will create the instances of those classes
 
 ## current stage
-in the current stage its not ready for release, but you can see the `vision` section
+in the current stage its not ready for release, the only possible
+this for now is to query data, but you can see the `vision` section
 
 ## vision / example
 ```py

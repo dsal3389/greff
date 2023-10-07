@@ -1,5 +1,5 @@
 # greff
-I wanted an animal name, but most of them already used in pypi :(
+I wanted an animal name, but most of them already used in pypi :(, the name pronounced `greph` 
 
 ## what is it
 a class orianted python library to build graphql python client, just build

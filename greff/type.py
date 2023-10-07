@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import (
-    TYPE_CHECKING, 
-    Generic, 
-    TypeVar, 
-    Any, 
-    dataclass_transform, 
+    TYPE_CHECKING,
+    Generic,
+    TypeVar,
+    Any,
+    dataclass_transform,
     no_type_check,
-    ClassVar
+    ClassVar,
 )
 from .types import UNSET
 from .field import Field
@@ -31,8 +31,8 @@ def _process_graphql_fields(type_: Type, fields: dict[str, Any]):
 @dataclass_transform(
     eq_default=False,
     order_default=False,
-    kw_only_default=True, 
-    field_specifiers=(Field,)
+    kw_only_default=True,
+    field_specifiers=(Field,),
 )
 class GreffTypeMedataClass(type):
     registered_types = {}
@@ -44,13 +44,10 @@ class GreffTypeMedataClass(type):
         if "__typename__" not in attrs:
             attrs["__typename__"] = name.title()
 
-        attrs.update({
-            "__implements__": {},
-            "__fields__": {}
-        })
+        attrs.update({"__implements__": {}, "__fields__": {}})
 
         attrs_fields = attrs["__fields__"]
-        
+
         for field_name, field_type in attrs.get("__annotations__", {}).items():
             if field_name.startswith("__") or is_classvar(field_type):
                 continue
@@ -65,7 +62,7 @@ class GreffTypeMedataClass(type):
                 field_class = Field(field_type, field_name, default=field_value)
             attrs_fields[field_name] = field_class
             attrs[field_name] = field_class
-        
+
         graphql_type = super().__new__(cls, name, bases, attrs)
 
         for base in bases:
@@ -82,7 +79,7 @@ class Type(Generic[T], metaclass=GreffTypeMedataClass):
     if TYPE_CHECKING:
         __implements__: ClassVar[dict[str, type[GreffTypeMedataClass]]] = {}
         __mutatename__: ClassVar[str] = ""
-        __queryname__: ClassVar[str] = "" 
+        __queryname__: ClassVar[str] = ""
         __typename__: ClassVar[str] = ""
         __fields__: ClassVar[dict[str, Field]] = {}
 

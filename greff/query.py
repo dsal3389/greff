@@ -22,7 +22,9 @@ def on(type_: type[Type] | Field) -> tuple[QueryOP, type[Type]]:
     return (QueryOP.ON, type_)
 
 
-def argument(type_: type[Type] | Field, **arguments) -> tuple[QueryOP, type[Type], dict]:
+def argument(
+    type_: type[Type] | Field, **arguments
+) -> tuple[QueryOP, type[Type], dict]:
     return (QueryOP.ARGUMENT, type_, arguments)
 
 
@@ -111,7 +113,9 @@ class Query:
             yield from self._serialize_query_fields(fragment_query)
 
     def _serialize_type_query(
-        self, type_query_list: tuple[Type, tuple[Field | str]], is_subfield: bool = False
+        self,
+        type_query_list: tuple[Type, tuple[Field | str]],
+        is_subfield: bool = False,
     ) -> Iterable[str]:
         if len(type_query_list) < 2:
             raise ValueError()

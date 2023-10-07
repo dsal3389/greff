@@ -9,11 +9,11 @@ if TYPE_CHECKING:
 
 class Field:
     def __init__(
-        self, 
-        __type: type | UnsetType = UNSET, 
-        __name: str | UnsetType = UNSET, 
-        /, 
-        default: Any | UnsetType = UNSET
+        self,
+        __type: type | UnsetType = UNSET,
+        __name: str | UnsetType = UNSET,
+        /,
+        default: Any | UnsetType = UNSET,
     ) -> None:
         self.default = default
 
@@ -38,7 +38,7 @@ class Field:
     @property
     def type_(self) -> type | UnsetType:
         return getattr(self, "_type", UNSET)
-    
+
     @property
     def is_graphql_reference(self) -> bool:
         return self._referenced_graphql_type is not None

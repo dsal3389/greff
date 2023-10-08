@@ -146,10 +146,10 @@ query = client.query((
         ))
     ),
     fragments={
-        ff.fragment("smlBook", SmallBook): (
+        ff.fragment("smlBook", on=SmallBook): (
             SmallBook.brief,
         ),
-        ff.fragment("bigBook", BigBook): (
+        ff.fragment("bigBook", on=BigBook): (
             BigBook.big_description
         )
     }

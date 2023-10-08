@@ -2,12 +2,15 @@
 I wanted an animal name, but most of them already used in pypi :(, the name pronounced `greph` 
 
 ## what is it
-a class orianted python library to build graphql python client, just build
-you class in python, query them, and the library will create the instances of those classes
+`greff` creates python classes from `graphql` response.
+
+## what is it not
+ * doesn't check for typing, you have `pydantic` for it
+ * dataclass, although you can use the `dataclasses` syntax to create classes `greff` is for graphql and it adds graphql attributes behind the sence
 
 ## current stage
-in the current stage its not ready for release, the only possible
-this for now is to query data, but you can see the `vision` section
+in the current stage its not ready for release, it is only possible
+(for now) to query data
 
 ## vision / example
 ```py
@@ -17,19 +20,17 @@ import greff as ff
 
 class ParentAuthor(ff.Type):
     __queryname__ = "authors"
-    __typename__ = "Parent"
 
     name: str
     age: int = 0
 
 
 class Author(ParentAuthor):
-    __typename__ = "Author"
     extra_field: str
 
 
 class SimpleAuthor(ParentAuthor):
-    __typename__ = "SimpleAuthor"
+    pass
 
 
 # we implement the graphql posting function ourself
@@ -54,14 +55,9 @@ graphql = ff.Client(query_request=_request_graphql)
 # 
 query = graphql.query((
         (ParentAuthor, (
-            ff.fragment_ref("frag"),
+            ParentAuthor.name,
         )),
     ),
-    fragments={
-        ff.fragment("frag", on=Author): (
-            Author.name,
-        ),
-    }
 )
 
 # graphql response 

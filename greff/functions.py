@@ -1,17 +1,23 @@
-from .type import Type
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .type import Type
 
 
 def implement_graphql_type_factory(
-    cls: type[Type], /, *, __typename: str = "", **kwargs
+    cls: type, /, *, __typename: str | None = None, **kwargs
 ) -> Type:
     """returns the correct class implementation base on the given `__typename`"""
-    if not issubclass(cls, Type):
+    __implements__ = getattr(cls, "__implements__", None)
+
+    if __implements__ is None:
         raise TypeError(
-            f"given class to `implement_graphql_type` does not inherit from `greff.Type`"
+            f"given class to `implement_graphql_type` must have implements, `{cls.__name__}.__implements__`"
         )
 
-    type_cls = cls.__implements__.get(__typename)
-
-    if type_cls is not None:
-        return type_cls(**kwargs)
+    if __typename is not None:
+        type_cls = __implements__.get(__typename)
+        if type_cls is not None:
+            return type_cls(**kwargs)
     return cls(**kwargs)

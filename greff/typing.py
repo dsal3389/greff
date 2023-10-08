@@ -18,11 +18,10 @@ def is_classvar(ann: type | None) -> bool:
 
 def is_graphql_type(ann: type | None) -> None:
     from .type import Type
-
     return ann and issubclass(ann, Type) or get_origin(ann) is Type
 
 
-def get_grahpql_ref(type_: type) -> Type | None:
+def get_grahpql_ref(type_: type) -> type[Type] | None:
     """
     returns the found graphql reference from given `type_`
     """

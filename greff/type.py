@@ -11,6 +11,7 @@ from typing import (
 from .types import UNSET
 from .field import Field
 from .typing import is_classvar
+from .functions import implement_graphql_type_factory
 
 
 T = TypeVar("T")
@@ -20,11 +21,30 @@ object_getattr = object.__getattribute__
 object_setattr = object.__setattr__
 
 
-def _process_graphql_fields(type_: Type, fields: dict[str, Any]):
+def _process_graphql_fields(type_: type[Type], fields: dict[str, T]) -> dict[str, T]:
     fields_copy = fields.copy()
+    
     for field in type_.__fields__.values():
-        if field.name not in fields:
+        field_value = fields.get(field.name, UNSET)
+
+        if field_value is UNSET:
             fields_copy[field.name] = field.get_default()
+        elif field.is_graphql_reference:
+            if not isinstance(field_value, dict):
+                raise TypeError(
+                    f"`{type_.__name__}.{field.name}` takes a graphql type, exepected dict value but got `{type(field_value)}`"
+                )
+            # if the field should be a sub graphlq type field, then
+            # it should be a dict with the `__typename`, and we should create the correct
+            # type with respect to the `__typename`
+            __typename = field_value.pop("__typename", None)
+            fields_copy[field.name] = implement_graphql_type_factory(
+                field.referenced_graphql_type,
+                __typename=__typename,
+                **field_value
+            )
+        else:
+            fields_copy[field.name] = field_value
     return fields_copy
 
 
@@ -44,9 +64,8 @@ class GreffTypeMedataClass(type):
         if "__typename__" not in attrs:
             attrs["__typename__"] = name.title()
 
-        attrs.update({"__implements__": {}, "__fields__": {}})
-
-        attrs_fields = attrs["__fields__"]
+        attrs["__implements__"] = {}
+        __fields__ = attrs.get("__fields__", {})
 
         for field_name, field_type in attrs.get("__annotations__", {}).items():
             if field_name.startswith("__") or is_classvar(field_type):
@@ -60,9 +79,14 @@ class GreffTypeMedataClass(type):
                 field_class.set_field_type(field_type)
             else:
                 field_class = Field(field_type, field_name, default=field_value)
-            attrs_fields[field_name] = field_class
-            attrs[field_name] = field_class
+            __fields__[field_name] = field_class
 
+        # set expand the type `attrs` because we want to allow
+        # access directly to the `Field` value why querying object
+        # likes so, Foo.name 
+        attrs = {**attrs, **__fields__}
+
+        attrs["__fields__"] = __fields__
         graphql_type = super().__new__(cls, name, bases, attrs)
 
         for base in bases:

@@ -1,7 +1,7 @@
 import enum
 
 
-class UnsetType:
+class UnsetType(enum.Enum):
     UNSET = enum.auto()
 
 

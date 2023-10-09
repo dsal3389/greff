@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Iterable, Any
 from .type import Type
 from .field import Field
 from .functions import implement_graphql_type_factory
-from .exceptions import QueryOperationException
+from .exceptions import QueryOperationException, GraphqlResponseException
 
 if TYPE_CHECKING:
     from .client import Client
@@ -50,6 +50,10 @@ class Query:
         self._queryname_to_type = self._process_queryname_to_type()
         self._last_response: dict | None = None
 
+    @property
+    def last_response(self) -> dict | None:
+        return self._last_response
+
     def __iter__(self) -> Iterable[Type]:
         """
         when iterating the query object, it actually sends the request throught the bound
@@ -61,13 +65,10 @@ class Query:
             )
 
         response = self._client.query_request("".join(self.serialize()))
-        errros = response.get("errors")
-
         self._last_response = response
 
-        # TODO: raise graphql exception
-        if errros is not None:
-            raise Exception(errros)
+        if "errors" in response:
+            raise GraphqlResponseException(response)
 
         for query_name, instance_attrs in response.get("data", {}).items():
             type_ = self._queryname_to_type.get(query_name)

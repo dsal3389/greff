@@ -4,10 +4,11 @@ from typing import (
     Generic,
     TypeVar,
     Any,
-    dataclass_transform,
     no_type_check,
     ClassVar,
 )
+from typing_extensions import dataclass_transform
+
 from .types import UNSET
 from .field import Field
 from .typing import is_classvar
@@ -59,12 +60,6 @@ class GreffTypeMedataClass(type):
 
     @no_type_check
     def __new__(cls, name: str, bases: tuple[type], attrs: dict) -> type:
-        # if `__typename__` should not inherit parents values, and if its not overwritten
-        # or does not exists in new type, then we should provide a default
-        if "__typename__" not in attrs:
-            attrs["__typename__"] = name.title()
-
-        attrs["__implements__"] = {}
         __fields__ = attrs.get("__fields__", {})
 
         for field_name, field_type in attrs.get("__annotations__", {}).items():
@@ -81,33 +76,37 @@ class GreffTypeMedataClass(type):
                 field_class = Field(field_type, field_name, default=field_value)
             __fields__[field_name] = field_class
 
-        # set expand the type `attrs` because we want to allow
-        # access directly to the `Field` value why querying object
-        # likes so, Foo.name 
-        attrs = {**attrs, **__fields__}
-
-        attrs["__fields__"] = __fields__
-        graphql_type = super().__new__(cls, name, bases, attrs)
+        new_attrs = {
+            "__implements__": {},
+            # if `__typename__` should not inherit parents values, and if its not overwritten
+            # or does not exists in new type, then we should provide a default
+            "__typename__": attrs.get("__typename__", name.title()),
+            "__fields__": __fields__,
+            **__fields__,
+            **attrs, 
+        }
+        graphql_type = super().__new__(cls, name, bases, new_attrs)
 
         for base in bases:
             # all base classes that are valid graphql types
             # we should put the newly created class as a class they (the bases) implement
             if type(base) is cls:
                 base.__implements__[graphql_type.__typename__] = graphql_type
-
         cls.registered_types[name] = graphql_type
         return graphql_type
 
 
 class Type(Generic[T], metaclass=GreffTypeMedataClass):
     if TYPE_CHECKING:
-        __implements__: ClassVar[dict[str, type[GreffTypeMedataClass]]] = {}
-        __mutatename__: ClassVar[str] = ""
-        __queryname__: ClassVar[str] = ""
-        __typename__: ClassVar[str] = ""
-        __fields__: ClassVar[dict[str, Field]] = {}
+        __implements__: ClassVar[dict[str, type[GreffTypeMedataClass]]]
+        __mutatename__: ClassVar[str]
+        __queryname__: ClassVar[str]
+        __typename__: ClassVar[str]
+        __fields__: ClassVar[dict[str, Field]]
+        __mutated_fields__: ClassVar[set[str]]
 
-    __slots__ = ("__dict__",)
+    __slots__ = ("__dict__", "__mutated_fields__")
+    __doc__ = ""
 
     def __init__(self, **fields) -> None:
         processed_fields = _process_graphql_fields(self.__class__, fields)
@@ -116,6 +115,19 @@ class Type(Generic[T], metaclass=GreffTypeMedataClass):
         # overwrite the `__getattribute__` and better performance I guess
         object_setattr(self, "__dict__", processed_fields)
 
+        # set of field names that were manupulated since 
+        # object initilzation will be stored there
+        object_setattr(self, "__mutated_fields__", set())
+
     @no_type_check
     def __setattr__(self, name: str, value: Any) -> None:
-        pass
+        field = self.__fields__.get(name)
+
+        if field is None:
+            raise AttributeError( f"unknown attribute `{self.__class__.__name__}.{name}`")
+        self.__mutated_fields__.add(name)
+        object_setattr(self, name, value)
+
+    def __repr__(self) -> str:
+        fields = ", ".join(f"{k}={v}" for k,v in self.__dict__.items())
+        return f"{self.__class__.__name__}({fields})"

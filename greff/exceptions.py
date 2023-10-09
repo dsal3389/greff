@@ -21,6 +21,11 @@ class QueryOperationException(Exception):
             f"operation `{op}` is not allowed in this context, allowed only {', '.join(allowed_ops)}"
         )
 
+
+class InvalidQueryException(Exception):
+    pass
+
+
 class GraphqlResponseException(Exception):
     def __init__(self, error_response: GraphqlErrorResponse) -> None:
         self.response = error_response

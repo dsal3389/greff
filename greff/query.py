@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, Iterable, Any
 from .type import Type
 from .field import Field
 from .functions import implement_graphql_type_factory
-from .exceptions import QueryOperationException, GraphqlResponseException
+from .exceptions import (
+    InvalidQueryException,
+    QueryOperationException, 
+    GraphqlResponseException, 
+)
 
 if TYPE_CHECKING:
     from .client import Client
@@ -46,13 +50,12 @@ class Query:
         self._client = client
         self._query = query
         self._fragments = fragments
-
         self._queryname_to_type = self._process_queryname_to_type()
-        self._last_response: dict | None = None
+        self._response: dict | None = None
 
     @property
-    def last_response(self) -> dict | None:
-        return self._last_response
+    def response(self) -> dict | None:
+        return self._response
 
     def __iter__(self) -> Iterable[Type]:
         """
@@ -64,8 +67,8 @@ class Query:
                 f"`Query` class has not client bound to it, cannot request data"
             )
 
-        response = self._client.query_request("".join(self.serialize()))
-        self._last_response = response
+        response = self._client.query_request(str(self))
+        self._response = response
 
         if "errors" in response:
             raise GraphqlResponseException(response)
@@ -78,15 +81,22 @@ class Query:
                     f"unknown query name returned `{query_name}`, probably a bug, not sure how we got here..."
                 )
 
-            for attrs in instance_attrs:
-                # we pop the `__typename` from the data
-                # because we don't want to pass it to the instance as argument
-                __typename = attrs.pop("__typename", "")
-                yield implement_graphql_type_factory(
-                    type_, __typename=__typename, **attrs
-                )
+            if isinstance(instance_attrs, list):
+                for attrs in instance_attrs:
+                    # we pop the `__typename` from the data
+                    # because we don't want to pass it to the instance as argument
+                    __typename = attrs.pop("__typename", None)
+                    yield implement_graphql_type_factory(
+                        type_, __typename=__typename, **attrs
+                    )
+            else:
+                __typename = instance_attrs.pop("__typename", None)
+                yield implement_graphql_type_factory(type_, __typename=__typename, **instance_attrs)
 
-    def serialize(self) -> str:
+    def __str__(self) -> str:
+        return "".join(self.serialize())
+
+    def serialize(self) -> Iterable[str]:
         """serialize given query to string"""
         if not isinstance(self._query, (list, tuple, set)):
             raise TypeError(
@@ -119,7 +129,9 @@ class Query:
         is_subfield: bool = False,
     ) -> Iterable[str]:
         if len(type_query_list) < 2:
-            raise ValueError()
+            raise InvalidQueryException(
+                f"query is not valid, expected a list with first index `Type` and second index list of fields"
+            )
 
         type_field_or_op, type_fields = type_query_list
 

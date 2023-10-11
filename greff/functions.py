@@ -1,8 +1,16 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     from .type import Type
+
+
+def isqueryable(type_: Type) -> bool:
+    return bool(getattr(type_, "__queryname__", None))
+
+
+def ismutable(type_: Type) -> bool:
+    return bool(getattr(type_, "__mutatename__", None))
 
 
 def implement_graphql_type_factory(

@@ -10,11 +10,6 @@ class GraphqlError(TypedDict):
     locations: list[dict[str, int]]
 
 
-class GraphqlErrorResponse(TypedDict):
-    data: list
-    errors: list[GraphqlError]
-
-
 class QueryOperationException(Exception):
     def __init__(self, op: QueryOP, allowed_ops: list[QueryOP]) -> None:
         super().__init__(
@@ -26,11 +21,18 @@ class InvalidQueryException(Exception):
     pass
 
 
+class TypenameConflictException(Exception):
+    def __init__(self, typename: str) -> None:
+        super().__init__(
+            f"multiple graphql types found with the same typename `{typename}`"
+        )
+
+
 class GraphqlResponseException(Exception):
-    def __init__(self, error_response: GraphqlErrorResponse) -> None:
-        self.response = error_response
+    def __init__(self, errors: list[GraphqlError]) -> None:
+        self.errors = errors
 
         error_messages_str = ""
-        for error_message in error_response.get("errors", []):
+        for error_message in errors:
             error_messages_str += ("   * " + error_message.get('message') + "\n")
         super().__init__(f"graphql returned errors:\n{error_messages_str}")

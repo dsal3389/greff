@@ -4,8 +4,8 @@ from typing import (
     Generic,
     TypeVar,
     Any,
-    no_type_check,
     ClassVar,
+    no_type_check,
 )
 from typing_extensions import dataclass_transform
 
@@ -13,6 +13,8 @@ from .types import UNSET
 from .field import Field
 from .typing import is_classvar
 from .functions import implement_graphql_type_factory
+from .registery import type_registery
+from .exceptions import TypenameConflictException
 
 
 T = TypeVar("T")
@@ -56,7 +58,7 @@ def _process_graphql_fields(type_: type[Type], fields: dict[str, T]) -> dict[str
     field_specifiers=(Field,),
 )
 class GreffTypeMedataClass(type):
-    registered_types = {}
+    queryable_registered_types = {}
 
     @no_type_check
     def __new__(cls, name: str, bases: tuple[type], attrs: dict) -> type:
@@ -85,6 +87,7 @@ class GreffTypeMedataClass(type):
             **__fields__,
             **attrs, 
         }
+
         graphql_type = super().__new__(cls, name, bases, new_attrs)
 
         for base in bases:
@@ -92,7 +95,7 @@ class GreffTypeMedataClass(type):
             # we should put the newly created class as a class they (the bases) implement
             if type(base) is cls:
                 base.__implements__[graphql_type.__typename__] = graphql_type
-        cls.registered_types[name] = graphql_type
+        type_registery.add_type(graphql_type)
         return graphql_type
 
 

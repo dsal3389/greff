@@ -3,11 +3,34 @@ querying is the most common operation in graphql, `greff` tries to make the quer
 graphql schema and make it programmingly easy to add/remove/modify queries
 
 ## TOC
- * [schema](#query-schema)
+ * [string query](#string-query)
+ * [programmic query](#programmic-query)
  * [query operations](#query-operations)
  * [fragments](#fragments)
 
-## query schema
+
+## string query
+`greff` support graphql string queries like so
+```py
+import greff as ff
+
+
+class Book(ff.Type): ...
+
+
+client = ff.Client(...)
+books_query = client.query("""
+    books {
+        title
+        description
+    }
+""")
+```
+when iterating over the response we will get `Book` instances
+
+> important note: `greff` doesn't make graphql types our of thin air, you need to create those classes and inherit from `greff.Type`
+
+## programmic query
 ```gql
 query {
     books {

@@ -1,10 +1,12 @@
 from __future__ import annotations
 import enum
+import itertools
 from typing import TYPE_CHECKING, Iterable, Any
 
-from .type import Type
+from .type import GreffTypeMedataClass, Type
 from .field import Field
 from .functions import implement_graphql_type_factory
+from .registery import type_registery
 from .exceptions import (
     InvalidQueryException,
     QueryOperationException, 
@@ -40,75 +42,37 @@ def fragment_ref(name: str) -> tuple[QueryOP, str]:
     return (QueryOP.FRAGMENT_REF, name)
 
 
-class Query:
+class QueryRequest:
     def __init__(
         self,
-        query: Iterable[tuple[type[Type], Field, ...]],
-        fragments: dict[tuple, tuple[...]],
-        client: Client | None = None,
+        query: Iterable[tuple[type[Type], Field, ...]] | str,
+        fragments: dict[tuple, tuple[...]] | None,
     ) -> None:
-        self._client = client
         self._query = query
         self._fragments = fragments
-        self._queryname_to_type = self._process_queryname_to_type()
-        self._response: dict | None = None
 
-    @property
-    def response(self) -> dict | None:
-        return self._response
+    def serialize(self) -> str:
+        return "".join(itertools.chain(self.serialize_query(), self.serialize_fragments()))
 
-    def __iter__(self) -> Iterable[Type]:
-        """
-        when iterating the query object, it actually sends the request throught the bound
-        client and return an instance of the corresponding class which was given in the query
-        """
-        if self._client is None:
-            raise ValueError(
-                f"`Query` class has not client bound to it, cannot request data"
-            )
-
-        response = self._client.query_request(str(self))
-        self._response = response
-
-        if "errors" in response:
-            raise GraphqlResponseException(response)
-
-        for query_name, instance_attrs in response.get("data", {}).items():
-            type_ = self._queryname_to_type.get(query_name)
-
-            if type_ is None:
-                raise ValueError(
-                    f"unknown query name returned `{query_name}`, probably a bug, not sure how we got here..."
+    def serialize_query(self) -> Iterable[str]:
+        """serialize given query to string"""
+        if isinstance(self._query, str):
+            yield self._query
+        else:
+            if not isinstance(self._query, (list, tuple, set)):
+                raise TypeError(
+                    f"given query data is not any of types `str`, `list`, `tuple` or `set`, but of type `{type(self._query)}`"
                 )
 
-            if isinstance(instance_attrs, list):
-                for attrs in instance_attrs:
-                    # we pop the `__typename` from the data
-                    # because we don't want to pass it to the instance as argument
-                    __typename = attrs.pop("__typename", None)
-                    yield implement_graphql_type_factory(
-                        type_, __typename=__typename, **attrs
-                    )
-            else:
-                __typename = instance_attrs.pop("__typename", None)
-                yield implement_graphql_type_factory(type_, __typename=__typename, **instance_attrs)
+            yield "query{"
+            for type_query in self._query:
+                yield from self._serialize_type_query(type_query)
+            yield "}"
 
-    def __str__(self) -> str:
-        return "".join(self.serialize())
+    def serialize_fragments(self) -> Iterable[str]:
+        if not self._fragments:
+            return
 
-    def serialize(self) -> Iterable[str]:
-        """serialize given query to string"""
-        if not isinstance(self._query, (list, tuple, set)):
-            raise TypeError(
-                f"given query data is not any of types `list`, `tuple` or `set`, but of type `{type(self._query)}`"
-            )
-
-        yield "query{"
-        for type_query in self._query:
-            yield from self._serialize_type_query(type_query)
-        yield "}"
-
-        # iter over each given fragment
         for fragment, fragment_query in self._fragments.items():
             if not isinstance(fragment, (tuple, list, set)) or len(fragment) < 2:
                 raise ValueError(
@@ -211,23 +175,36 @@ class Query:
         """returns a boolean value indicating if given iterable is a unique query operation"""
         return len(o) > 1 and o[0] is not type and isinstance(o[0], QueryOP)
 
-    def _process_queryname_to_type(self) -> dict[str, type[Type]]:
-        map_ = {}
 
-        for type_or_op, _ in self._query:
-            if isinstance(type_or_op, (tuple, list, set)):
-                if not self._is_query_op(type_or_op):
-                    raise TypeError()
-                op, *_ = type_or_op
+class QueryResponse:
+    def __init__(self, response: dict[str, Any]) -> None:
+        self._response = response
 
-                if op not in (QueryOP.ARGUMENT, QueryOP.ON):
-                    raise QueryOperationException(
-                        op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
+    def __iter__(self) -> Iterable[Type]:
+        for query_name, instance_attrs in self.response.get("data", {}).items():
+            type_ = type_registery.get_queryable(query_name)
+
+            if type_ is None:
+                raise ValueError(
+                    f"unknown query name returned `{query_name}`, probably a bug, not sure how we got here..."
+                )
+
+            if isinstance(instance_attrs, list):
+                for attrs in instance_attrs:
+                    # we pop the `__typename` from the data
+                    # because we don't want to pass it to the instance as argument
+                    __typename = attrs.pop("__typename", None)
+                    yield implement_graphql_type_factory(
+                        type_, __typename=__typename, **attrs
                     )
-                type_ = _[0]
             else:
-                if not issubclass(type_or_op, Type):
-                    raise TypeError()
-                type_ = type_or_op
-            map_[type_.__queryname__] = type_
-        return map_
+                __typename = instance_attrs.pop("__typename", None)
+                yield implement_graphql_type_factory(type_, __typename=__typename, **instance_attrs)
+
+    @property
+    def request(self) -> QueryRequest | str | None:
+        return self._request
+
+    @property
+    def response(self) -> dict[str, Any]:
+        return self._response

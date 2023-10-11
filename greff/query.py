@@ -181,6 +181,15 @@ class QueryResponse:
         self._response = response
 
     def __iter__(self) -> Iterable[Type]:
+        yield from itertools.chain.from_iterable(self.types())
+
+    @property
+    def response(self) -> dict[str, Any]:
+        return self._response
+
+    def types(self) -> tuple[Type, ...]:
+        iterables = []
+
         for query_name, instance_attrs in self.response.get("data", {}).items():
             type_ = type_registery.get_queryable(query_name)
 
@@ -188,23 +197,18 @@ class QueryResponse:
                 raise ValueError(
                     f"unknown query name returned `{query_name}`, probably a bug, not sure how we got here..."
                 )
+            iterables.append(self._iter_type(type_, instance_attrs))
+        return iterables
 
-            if isinstance(instance_attrs, list):
-                for attrs in instance_attrs:
-                    # we pop the `__typename` from the data
-                    # because we don't want to pass it to the instance as argument
-                    __typename = attrs.pop("__typename", None)
-                    yield implement_graphql_type_factory(
-                        type_, __typename=__typename, **attrs
-                    )
-            else:
-                __typename = instance_attrs.pop("__typename", None)
-                yield implement_graphql_type_factory(type_, __typename=__typename, **instance_attrs)
-
-    @property
-    def request(self) -> QueryRequest | str | None:
-        return self._request
-
-    @property
-    def response(self) -> dict[str, Any]:
-        return self._response
+    def _iter_type(self, type_: type[Type], instance_attrs: list[dict] | dict) -> Iterable[Type]:
+        if isinstance(instance_attrs, list):
+            for attrs in instance_attrs:
+                # we pop the `__typename` from the data
+                # because we don't want to pass it to the instance as argument
+                __typename = attrs.pop("__typename", None)
+                yield implement_graphql_type_factory(
+                    type_, __typename=__typename, **attrs
+                )
+        else:
+            __typename = instance_attrs.pop("__typename", None)
+            yield implement_graphql_type_factory(type_, __typename=__typename, **instance_attrs)

@@ -16,7 +16,6 @@ class Field:
         default: Any | UnsetType = UNSET,
     ) -> None:
         self.default = default
-
         self._name = __name
         self._referenced_graphql_type = None
 

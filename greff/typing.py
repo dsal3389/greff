@@ -7,6 +7,7 @@ from typing import (
     GenericAlias,
     Generic,
 )
+from .registery import type_registery
 
 
 TypesWithArgs = (_GenericAlias, GenericAlias, Generic)
@@ -22,10 +23,8 @@ def is_graphql_type(ann: type | None) -> None:
 
 
 def get_grahpql_ref(type_: type) -> type[Type] | None:
-    """
-    returns the found graphql reference from given `type_`
-    """
-    from .type import Type, GreffTypeMedataClass
+    """returns the found graphql reference from given `type_`"""
+    from .type import Type
 
     if type(type_) not in TypesWithArgs:
         if issubclass(type_, Type):
@@ -40,8 +39,6 @@ def get_grahpql_ref(type_: type) -> type[Type] | None:
     if args:
         first_arg = args[0]
         if isinstance(first_arg, ForwardRef):
-            return GreffTypeMedataClass.registered_types.get(
-                first_arg.__forward_arg__, None
-            )
+            return type_registery.get_type(first_arg.__forward_arg__)
         if issubclass(first_arg, Type):
             return first_arg

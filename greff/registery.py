@@ -32,12 +32,17 @@ class _TypeRegistery:
     def __init__(self) -> None:
         self._queryable_types = {}
         self._mutable_types = {}
+        self._types = {}
 
     def add_type(self, type_: type[Type]) -> None:
         if isqueryable(type_):
             self._queryable_types[type_.__queryname__] = type_
         if ismutable(type_):
             self._mutable_types[type_.__mutatename__] = type_
+        self._types[type_.__name__] = type_
+
+    def get_type(self, name: str) -> type[Type] | None:
+        return self._types.get(name)
 
     def get_queryable(self, queryname: str) -> type[Type] | None:
         return self._queryable_types.get(queryname)

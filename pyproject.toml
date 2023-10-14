@@ -4,9 +4,13 @@ version = "0.0.2-alpha"
 description = "rich graphql client in python"
 authors = ["daniel sonbolian <dsal3389@gmail.com>"]
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/dsal3389/greff"
+keywords = ["graphql"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+typing-extensions = "^4.8.0"
 
 
 [build-system]

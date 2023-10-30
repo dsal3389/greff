@@ -108,11 +108,11 @@ class QueryRequest:
         elif isinstance(type_field_or_op, Field):
             # when the given type is a `Field` we are probably
             # inside a sub field
-            if not type_field_or_op.is_graphql_reference:
+            if type_field_or_op.referenced_graphql_type is not None:
                 raise TypeError(
                     f"given value for subfield `{type_field_or_op.name}` must reference a valid graphql type"
                 )
-            yield type_field_or_op.__queryname__
+            yield type_field_or_op.name
         else:
             if is_subfield:
                 raise TypeError(

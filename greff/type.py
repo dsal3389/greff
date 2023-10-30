@@ -8,6 +8,7 @@ from typing import (
     no_type_check,
 )
 from typing_extensions import dataclass_transform
+from collections import defaultdict
 
 from .types import UNSET
 from .field import Field
@@ -24,31 +25,46 @@ object_getattr = object.__getattribute__
 object_setattr = object.__setattr__
 
 
-def _process_graphql_fields(type_: type[Type], fields: dict[str, T]) -> dict[str, T]:
-    fields_copy = fields.copy()
+def _process_graphql_fields(type_: type[Type], fields_value: dict[str, T]) -> dict[str, T]:
+    fields_value_copy = fields_value.copy()
     
     for field in type_.__fields__.values():
-        field_value = fields.get(field.name, UNSET)
+        field_value = fields_value.get(field.name, UNSET)
 
         if field_value is UNSET:
-            fields_copy[field.name] = field.get_default()
-        elif field.is_graphql_reference:
-            if not isinstance(field_value, dict):
+            fields_value_copy[field.name] = field.get_default()
+        elif field.referenced_graphql_type is not None:
+            if field.iterable:
+                if not isinstance(field_value, (list, tuple, set)):
+                    raise TypeError(
+                        f"`{type_.__name__}.{field.name}` should be a list of graphql types, but graphql returned type `{type(field_value).__name__}`"
+                    )
+            elif not isinstance(field_value, dict):
                 raise TypeError(
-                    f"`{type_.__name__}.{field.name}` takes a graphql type, exepected dict value but got `{type(field_value)}`"
+                    f"`{type_.__name__}.{field.name}` takes a graphql type, exepected dict, but graphql returned `{type(field_value).__name__}`"
                 )
-            # if the field should be a sub graphlq type field, then
-            # it should be a dict with the `__typename`, and we should create the correct
-            # type with respect to the `__typename`
-            __typename = field_value.pop("__typename", None)
-            fields_copy[field.name] = implement_graphql_type_factory(
-                field.referenced_graphql_type,
-                __typename=__typename,
-                **field_value
-            )
+
+            def _implement_instance(attrs):
+                # if the field should be a sub graphlq type field, then
+                # it should be a dict with the `__typename`, and we should create the correct
+                # type with respect to the `__typename`
+                __typename = attrs.pop("__typename", None)
+                return implement_graphql_type_factory(
+                    field.referenced_graphql_type, 
+                    __typename=__typename, 
+                    **attrs
+                )
+                
+            if field.iterable:
+                fields_value_copy[field.name] = []
+
+                for attrs in field_value:
+                    fields_value_copy[field.name].append(_implement_instance(attrs))
+            else:
+                fields_value_copy[field.name] = _implement_instance(field_value)
         else:
-            fields_copy[field.name] = field_value
-    return fields_copy
+            fields_value_copy[field.name] = field_value
+    return fields_value_copy
 
 
 @dataclass_transform(

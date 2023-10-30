@@ -6,6 +6,7 @@ from typing import (
     _GenericAlias,
     GenericAlias,
     Generic,
+    Union
 )
 from .registery import type_registery
 
@@ -22,23 +23,5 @@ def is_graphql_type(ann: type | None) -> None:
     return ann and issubclass(ann, Type) or get_origin(ann) is Type
 
 
-def get_grahpql_ref(type_: type) -> type[Type] | None:
-    """returns the found graphql reference from given `type_`"""
-    from .type import Type
-
-    if type(type_) not in TypesWithArgs:
-        if issubclass(type_, Type):
-            return type_
-        return None
-
-    if get_origin(type_) is not Type:
-        return None
-
-    args = get_args(type_)
-
-    if args:
-        first_arg = args[0]
-        if isinstance(first_arg, ForwardRef):
-            return type_registery.get_type(first_arg.__forward_arg__)
-        if issubclass(first_arg, Type):
-            return first_arg
+def is_union(anno: type | None) -> bool:
+    return get_origin(anno) is Union

@@ -89,7 +89,7 @@ class QueryRequest:
 
     def _serialize_type_query(
         self,
-        type_query_list: tuple[Type, tuple[Field | str]],
+        type_query_list: Iterable[Type, tuple[Field | str]],
         is_subfield: bool = False,
     ) -> Iterable[str]:
         if len(type_query_list) < 2:
@@ -106,20 +106,21 @@ class QueryRequest:
                 type_field_or_op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
             )
         elif isinstance(type_field_or_op, Field):
-            # when the given type is a `Field` we are probably
-            # inside a sub field
-            if type_field_or_op.referenced_graphql_type is not None:
-                raise TypeError(
-                    f"given value for subfield `{type_field_or_op.name}` must reference a valid graphql type"
-                )
-            yield type_field_or_op.name
+            field = type_field_or_op
+            if not field:
+                raise ValueError(f"given field as root type for query, `{field.name}`")
+            # if field.referenced_graphql_type is None:
+            #     raise TypeError(
+            #         f"given value for subfield `{field.name}` must reference a valid graphql type"
+            #     )
+            yield field.name
         else:
-            if is_subfield:
-                raise TypeError(
-                    f"cannot provide a standalone graphql field as a value to a subfield, given type is `{type_field_or_op}`"
-                )
             if not issubclass(type_field_or_op, Type):
                 raise TypeError(f"queried type does not inherit from `greff.Type`")
+            if is_subfield:
+                raise TypeError(
+                    f"cannot provide a standalone graphql type as a value to a subfield, given type is `{type_field_or_op}`"
+                )
             yield type_field_or_op.__queryname__
         yield from self._serialize_query_fields(type_fields)
 
@@ -195,7 +196,7 @@ class QueryResponse:
 
             if type_ is None:
                 raise ValueError(
-                    f"unknown query name returned `{query_name}`, probably a bug, not sure how we got here..."
+                    f"unknown query name returned `{query_name}`, probably a bug..."
                 )
             iterables.append(self._iter_type(type_, instance_attrs))
         return iterables

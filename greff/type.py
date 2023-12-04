@@ -33,37 +33,32 @@ def _process_graphql_fields(type_: type[Type], fields_value: dict[str, T]) -> di
 
         if field_value is UNSET:
             fields_value_copy[field.name] = field.get_default()
-        elif field.referenced_graphql_type is not None:
-            if field.iterable:
-                if not isinstance(field_value, (list, tuple, set)):
-                    raise TypeError(
-                        f"`{type_.__name__}.{field.name}` should be a list of graphql types, but graphql returned type `{type(field_value).__name__}`"
-                    )
-            elif not isinstance(field_value, dict):
-                raise TypeError(
-                    f"`{type_.__name__}.{field.name}` takes a graphql type, exepected dict, but graphql returned `{type(field_value).__name__}`"
-                )
+            continue
 
-            def _implement_instance(attrs):
-                # if the field should be a sub graphlq type field, then
-                # it should be a dict with the `__typename`, and we should create the correct
-                # type with respect to the `__typename`
-                __typename = attrs.pop("__typename", None)
-                return implement_graphql_type_factory(
-                    field.referenced_graphql_type, 
-                    __typename=__typename, 
-                    **attrs
-                )
-                
-            if field.iterable:
-                fields_value_copy[field.name] = []
+        field.validate_value(graphlq_type=type_, value=field_value)
 
-                for attrs in field_value:
-                    fields_value_copy[field.name].append(_implement_instance(attrs))
-            else:
-                fields_value_copy[field.name] = _implement_instance(field_value)
-        else:
+        if field.referenced_graphql_type is None:
             fields_value_copy[field.name] = field_value
+            continue 
+
+        def _implement_instance(attrs):
+            # if the field should be a sub graphlq type field, then
+            # it should be a dict with the `__typename`, and we should create the correct
+            # type with respect to the `__typename`
+            __typename = attrs.pop("__typename", None)
+            return implement_graphql_type_factory(
+                field.referenced_graphql_type, 
+                __typename=__typename, 
+                **attrs
+            )
+            
+        if field.iterable:
+            fields_value_copy[field.name] = []
+
+            for attrs in field_value:
+                fields_value_copy[field.name].append(_implement_instance(attrs))
+        else:
+            fields_value_copy[field.name] = _implement_instance(field_value)
     return fields_value_copy
 
 
@@ -86,13 +81,12 @@ class GreffTypeMedataClass(type):
 
             field_value = attrs.get(field_name, UNSET)
 
-            if isinstance(field_value, Field):
-                field_class = field_value
-                field_class._name = field_name
-                field_class.set_field_type(field_type)
-            else:
-                field_class = Field(field_type, field_name, default=field_value)
-            __fields__[field_name] = field_class
+            if not isinstance(field_value, Field):
+                field_value = Field(default=field_value)
+                
+            field_value._set_field_name(field_name)
+            field_value._set_field_type(field_type)
+            __fields__[field_name] = field_value
 
         new_attrs = {
             "__implements__": {},

@@ -18,7 +18,7 @@ def is_classvar(ann: type | None) -> bool:
     return ann and getattr(ann, "_name", None) == "ClassVar"
 
 
-def is_graphql_type(ann: type | None) -> None:
+def is_graphql_type(ann: type | None) -> bool:
     from .type import Type
     return ann and issubclass(ann, Type) or get_origin(ann) is Type
 

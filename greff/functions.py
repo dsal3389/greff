@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, TypeVar
 
 if TYPE_CHECKING:
     from .type import Type
+
+
+T = TypeVar("T")
 
 
 def isqueryable(type_: Type) -> bool:

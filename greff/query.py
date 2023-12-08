@@ -59,9 +59,9 @@ class QueryRequest:
         if isinstance(self._query, str):
             yield self._query
         else:
-            if not isinstance(self._query, (list, tuple, set)):
+            if not isinstance(self._query, (tuple, list, set, frozenset)):
                 raise TypeError(
-                    f"given query data is not any of types `str`, `list`, `tuple` or `set`, but of type `{type(self._query)}`"
+                    f"given query data is not iterable, `{type(self._query).__name__}`"
                 )
 
             yield "query{"
@@ -101,7 +101,7 @@ class QueryRequest:
 
         if isinstance(type_field_or_op, (tuple, list, set)):
             if not self._is_query_op(type_field_or_op):
-                raise ValueError(f"first argument in query should be the graphql type")
+                raise ValueError(f"first argument in query should be the graphql type or graphql operation")
             yield self._serialize_query_op(
                 type_field_or_op, allowed_ops=(QueryOP.ARGUMENT, QueryOP.ON)
             )
@@ -109,10 +109,6 @@ class QueryRequest:
             field = type_field_or_op
             if not field:
                 raise ValueError(f"given field as root type for query, `{field.name}`")
-            # if field.referenced_graphql_type is None:
-            #     raise TypeError(
-            #         f"given value for subfield `{field.name}` must reference a valid graphql type"
-            #     )
             yield field.name
         else:
             if not issubclass(type_field_or_op, Type):

@@ -37,28 +37,18 @@ def _process_graphql_fields(type_: type[Type], fields_value: dict[str, T]) -> di
 
         field.validate_value(graphlq_type=type_, value=field_value)
 
-        if field.referenced_graphql_type is None:
+        if not field.is_type_graphql:
             fields_value_copy[field.name] = field_value
             continue 
 
-        def _implement_instance(attrs):
-            # if the field should be a sub graphlq type field, then
-            # it should be a dict with the `__typename`, and we should create the correct
-            # type with respect to the `__typename`
-            __typename = attrs.pop("__typename", None)
-            return implement_graphql_type_factory(
-                field.referenced_graphql_type, 
-                __typename=__typename, 
-                **attrs
-            )
-            
         if field.iterable:
             fields_value_copy[field.name] = []
 
             for attrs in field_value:
-                fields_value_copy[field.name].append(_implement_instance(attrs))
+                graphql_obj = implement_graphql_type_factory(field.type, **attrs)
+                fields_value_copy[field.name].append(graphql_obj)
         else:
-            fields_value_copy[field.name] = _implement_instance(field_value)
+            fields_value_copy[field.name] = implement_graphql_type_factory(field.type, **field_value)
     return fields_value_copy
 
 

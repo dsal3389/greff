@@ -15,33 +15,37 @@ in the current stage its not ready for release, it is only possible
 ## vision / example
 ```py
 import requests
-import greff as ff
+import greff
 
 
-class ParentAuthor(ff.Type):
-    __queryname__ = "authors"
-
+@greff.define_type(queryname="authors")
+class ParentAuthor(greff.Model):
     name: str
     age: int = 0
 
 
+@greff.define_type()
 class Author(ParentAuthor):
     extra_field: str
 
 
+@greff.define_type()
 class SimpleAuthor(ParentAuthor):
     pass
 
 
-# we implement the graphql posting function ourself
-# since it can very from diffrent implementations
-def _request_graphql(query) -> dict:
-    response = requests.post("http://localhost:8000/graphql", json={"query": query}, verify=False)
-    response.raise_for_status()
-    return response.json()
+class MyGraphqlClient(greff.HTTPClient):
+
+  # we implement the graphql posting function ourself
+  # since it can very from diffrent implementations
+  def request(self, query: str) -> dict:
+      response = requests.post("http://localhost:8000/graphql", json={"query": query}, verify=False)
+      response.raise_for_status()
+      return response.json()
+
 
 # create our charryplate graphql client
-graphql = ff.Client(query_request=_request_graphql)
+graphql = MyGraphqlClient()
 
 # graphql equivelent
 # query {
@@ -55,7 +59,7 @@ graphql = ff.Client(query_request=_request_graphql)
 # 
 query = graphql.query((
         (ParentAuthor, (
-            ParentAuthor.name,
+            ParentAuthor.query.name,
         )),
     ),
 )

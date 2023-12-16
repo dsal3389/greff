@@ -11,6 +11,7 @@ keywords = ["graphql"]
 [tool.poetry.dependencies]
 python = "^3.10"
 typing-extensions = "^4.8.0"
+pydantic = "^2.5.2"
 
 
 [build-system]

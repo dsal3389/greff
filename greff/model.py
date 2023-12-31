@@ -1,17 +1,18 @@
 from __future__ import annotations
 from collections import namedtuple
 from typing import ClassVar, Callable, NamedTuple
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from .registry import registry
 from .field import GreffModelField
+from .types import GreffUndefined 
 
 
 class Model(BaseModel):
     __typename__: ClassVar[str] = ""
     __implements__: ClassVar[dict[str, Model]] = {}
     __graphql_model_fields__: ClassVar[dict[str, GreffModelField]] = {}
-    
+
     query: ClassVar[NamedTuple]
     model_config = ConfigDict(
         revalidate_instances="subclass-instances"
@@ -19,7 +20,7 @@ class Model(BaseModel):
 
 
 def define_type(
-    queryname: str = "", 
+    queryname: str = "",
     mutatename: str = "",
     typename: str = ""
 ) -> Callable[..., type[Model]]:
@@ -41,12 +42,12 @@ def define_type(
             if hasattr(parent, "__implements__"):
                 parent.__implements__[model.__typename__] = model
 
-        graphql_fields = {}
+        graphql_query_fields = {}
         for field_name, pydantic_field_info in model.model_fields.items():
-            graphql_fields[field_name] = GreffModelField(field_name, model, pydantic_field_info)
+            graphql_query_fields[field_name] = GreffModelField(field_name, model, pydantic_field_info)
 
-        _model_query = namedtuple(f"{model.__name__}Query", graphql_fields.keys())
-        model.query = _model_query(**graphql_fields)
+        _model_query = namedtuple(f"{model.__name__}Query", graphql_query_fields.keys())
+        model.query = _model_query(**graphql_query_fields)
         registry.register_model(model)
         return model
     return _define_type_deco

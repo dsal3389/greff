@@ -1,4 +1,4 @@
-from .query import QuerySerializer, QueryResults
+from .query import Query, QueryResults
 
 
 class HTTPClient:
@@ -6,6 +6,9 @@ class HTTPClient:
         raise NotImplementedError
 
     def query(self, query) -> dict:
-        query_str = QuerySerializer(query).serialize()
-        raw_response = self.request(query_str)
+        if not isinstance(query, (str, Query)):
+            query = Query(query).serialize()
+
+        raw_response = self.request(query)
         return QueryResults(raw_response)
+        

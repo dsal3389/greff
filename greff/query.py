@@ -3,10 +3,12 @@ from __future__ import annotations
 import enum
 import inspect
 import dataclasses
-from typing import TypeVar, Any, Iterable
+from typing import Any, Iterable
 
 from .model import Model
-from .field import GreffModelField 
+from .registry import registry
+from .field import GreffModelField
+from .functions import implement_model_instance
 
 
 class _GraphqlQueryOperationType(enum.Enum):
@@ -25,17 +27,15 @@ _GreffQueryOperation = dataclasses.make_dataclass("_GreffQueryOperation", (
 def arguments(
     model: Model | GreffModelField, 
     **kwargs
-) -> tuple[_GraphqlQueryOperation, Model | GreffModelField, dict[str, Any]]:
+) -> _GreffQueryOperation:
     return _GreffQueryOperation(op=_GraphqlQueryOperationType.ARGUMENTS, model=model, extra=kwargs)
 
 
-class QuerySerializer:
+class Query:
     def __init__(self, query: Iterable[Iterable[Model, Iterable[GreffModelField]]]) -> None:
         self._query = query
 
     def serialize(self) -> str:
-        if isinstance(self._query, str):
-            return self._query
         return "".join(self._serialize())
 
     def _serialize(self) -> Iterable[str]:
@@ -50,7 +50,7 @@ class QuerySerializer:
         sub_field: bool = True
     ) -> Iterable[str]:
         model, fields = model_query
-        
+
         if isinstance(model, _GreffQueryOperation):
             yield self._serialize_query_operation(model)
         else:
@@ -91,4 +91,25 @@ class QuerySerializer:
 
 
 class QueryResults:
-    pass
+    def __init__(self, data: dict[str, ...]) -> None:
+        self._data = data
+
+    @property
+    def data(self) -> dict[str, ...]:
+        return self._data
+
+    def groups(self) -> tuple[Iterable[Model], ...]:
+        graphql_data = self.data.get("data")
+        groups = []
+
+        for model_name, model_data in graphql_data.items():
+            model_type = registry.get_model(model_name)
+            groups.append(self._iter_model_instances(model_type, model_data))
+        return tuple(groups)
+
+    def _iter_model_instances(self, model: type[Model], data: list[dict] | dict) -> Iterable[Model]:
+        if isinstance(data, (list, tuple, set, frozenset)):
+            for instance_data in data:
+                yield implement_model_instance(model, instance_data)
+        else:
+            yield implement_model_instance(model, data)

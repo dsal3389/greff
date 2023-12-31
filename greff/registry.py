@@ -11,9 +11,11 @@ class _GreffModelRegistry:
     
     def register_model(self, model: type[Model]) -> None:
         self._registered_models[model.__typename__] = model
+        if model.__queryname__:
+            self._registered_models[model.__queryname__] = model
 
-    def get_model(self, typename: str) -> Optional[type[Model]]:
-        return self._query_models.get(typename)
+    def get_model(self, key: str) -> Optional[type[Model]]:
+        return self._registered_models.get(key)
 
 
 registry = _GreffModelRegistry()

@@ -3,10 +3,10 @@ from __future__ import annotations
 import enum
 import inspect
 import dataclasses
-from typing import Any, Iterable
+from typing import Iterable
 
 from .model import Model
-from .registry import registry
+from .registry import model_registry
 from .field import GreffModelField
 from .functions import implement_model_instance
 
@@ -25,10 +25,16 @@ _GreffQueryOperation = dataclasses.make_dataclass("_GreffQueryOperation", (
 
 
 def arguments(
-    model: Model | GreffModelField, 
+    model: Model | GreffModelField,
     **kwargs
 ) -> _GreffQueryOperation:
     return _GreffQueryOperation(op=_GraphqlQueryOperationType.ARGUMENTS, model=model, extra=kwargs)
+
+
+def on(
+    model: Model | GreffModelField
+) -> _GreffQueryOperation:
+    return _GreffQueryOperation(_GraphqlQueryOperationType.INLINE_FRAGMENT, model=model)
 
 
 class Query:
@@ -45,8 +51,8 @@ class Query:
         yield "}"
 
     def _serialize_model_query(
-        self, 
-        model_query, 
+        self,
+        model_query,
         sub_field: bool = True
     ) -> Iterable[str]:
         model, fields = model_query
@@ -57,7 +63,7 @@ class Query:
             if inspect.isclass(model) and issubclass(model, Model):
                 if sub_field:
                     raise TypeError(
-                        f"given query subfield a root model {model.__name__}"
+                        f"given query subfield a root model `{model.__name__}`"
                     )
             elif isinstance(model, GreffModelField):
                 if not sub_field:
@@ -88,6 +94,8 @@ class Query:
         if operation.op is _GraphqlQueryOperationType.ARGUMENTS:
             serialized_arguments = ", ".join(f"{k}: \"{v}\"" for k,v in operation.extra.items())
             return f"{operation.model.__queryname__}({serialized_arguments})"
+        if operation.op is _GraphqlQueryOperationType.INLINE_FRAGMENT:
+            return f"... {operation.model.__typename__}"
 
 
 class QueryResults:
@@ -103,7 +111,7 @@ class QueryResults:
         groups = []
 
         for model_name, model_data in graphql_data.items():
-            model_type = registry.get_model(model_name)
+            model_type = model_registry.get_model(model_name)
             groups.append(self._iter_model_instances(model_type, model_data))
         return tuple(groups)
 

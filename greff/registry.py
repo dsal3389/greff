@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 class _GreffModelRegistry:
     def __init__(self) -> None:
         self._registered_models = {}
-    
+
     def register_model(self, model: type[Model]) -> None:
         self._registered_models[model.__typename__] = model
         if model.__queryname__:
@@ -18,4 +18,4 @@ class _GreffModelRegistry:
         return self._registered_models.get(key)
 
 
-registry = _GreffModelRegistry()
+model_registry = _GreffModelRegistry()

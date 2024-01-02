@@ -3,15 +3,13 @@ from collections import namedtuple
 from typing import ClassVar, Callable, NamedTuple
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from .registry import registry
+from .registry import model_registry
 from .field import GreffModelField
-from .types import GreffUndefined 
 
 
 class Model(BaseModel):
     __typename__: ClassVar[str] = ""
     __implements__: ClassVar[dict[str, Model]] = {}
-    __graphql_model_fields__: ClassVar[dict[str, GreffModelField]] = {}
 
     query: ClassVar[NamedTuple]
     model_config = ConfigDict(
@@ -46,8 +44,8 @@ def define_type(
         for field_name, pydantic_field_info in model.model_fields.items():
             graphql_query_fields[field_name] = GreffModelField(field_name, model, pydantic_field_info)
 
-        _model_query = namedtuple(f"{model.__name__}Query", graphql_query_fields.keys())
-        model.query = _model_query(**graphql_query_fields)
-        registry.register_model(model)
+        model_query_nt = namedtuple(f"{model.__name__}Query", graphql_query_fields.keys())
+        model.query = model_query_nt(**graphql_query_fields)
+        model_registry.register_model(model)
         return model
     return _define_type_deco

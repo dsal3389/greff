@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "greff"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 description = "rich graphql client in python"
 authors = ["daniel sonbolian <dsal3389@gmail.com>"]
 readme = "README.md"

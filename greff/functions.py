@@ -7,7 +7,9 @@ from .model import Model
 from .exceptions import GreffUnknownTypenameException
 
 
-def implement_model_instance(model_type: type[Model], graphql_instance_data: dict[str, Any]) -> Model:
+def implement_model_instance(
+    model_type: type[Model], graphql_instance_data: dict[str, Any]
+) -> Model:
     if not inspect.isclass(model_type) or not issubclass(model_type, Model):
         raise ValueError(f"function `implement_model_instance` accept model type")
 

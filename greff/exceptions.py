@@ -7,7 +7,9 @@ if TYPE_CHECKING:
 
 class GreffUnknownTypenameException(Exception):
     def __init__(self, model: type[Model], typename: str) -> None:
-        super().__init__(f"graphql returned unknown typename `{typename}` for model `{model.__name__}`")
+        super().__init__(
+            f"graphql returned unknown typename `{typename}` for model `{model.__name__}`"
+        )
 
 
 class GreffErrorResponseException(Exception):
@@ -18,4 +20,3 @@ class GreffErrorResponseException(Exception):
         for error in self.errors:
             error_messages.append(error.get("message"))
         super().__init__("\n".join(error_messages))
-

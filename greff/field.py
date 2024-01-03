@@ -9,10 +9,7 @@ if TYPE_CHECKING:
 
 class GreffModelField:
     def __init__(
-        self,
-        name: str,
-        parent_model: Model,
-        pydantic_field_info: FieldInfo
+        self, name: str, parent_model: Model, pydantic_field_info: FieldInfo
     ) -> None:
         self.name = name
         self._parent_model = parent_model
@@ -30,7 +27,5 @@ class GreffModelField:
 
 
 def field(queryname: str = "", *args, **kwargs) -> Field:
-    kwargs["json_schema_extra"] = {
-        "queryname": queryname
-    }
+    kwargs["json_schema_extra"] = {"queryname": queryname}
     return Field(*args, **kwargs)

@@ -17,28 +17,30 @@ class _GraphqlQueryOperationType(enum.Enum):
     FRAGMENT_REF = enum.auto()
 
 
-_GreffQueryOP = dataclasses.make_dataclass("_GreffQueryOP", (
-    ("op", _GraphqlQueryOperationType),
-    ("model", Model | GreffModelField),
-    ("extra", dict, dataclasses.field(default_factory=dict))
-))
+_GreffQueryOP = dataclasses.make_dataclass(
+    "_GreffQueryOP",
+    (
+        ("op", _GraphqlQueryOperationType),
+        ("model", Model | GreffModelField),
+        ("extra", dict, dataclasses.field(default_factory=dict)),
+    ),
+)
 
 
-def arguments(
-    model: Model | GreffModelField,
-    **kwargs
-) -> _GreffQueryOP:
-    return _GreffQueryOP(op=_GraphqlQueryOperationType.ARGUMENTS, model=model, extra=kwargs)
+def arguments(model: Model | GreffModelField, **kwargs) -> _GreffQueryOP:
+    return _GreffQueryOP(
+        op=_GraphqlQueryOperationType.ARGUMENTS, model=model, extra=kwargs
+    )
 
 
-def on(
-    model: Model | GreffModelField
-) -> _GreffQueryOP:
+def on(model: Model | GreffModelField) -> _GreffQueryOP:
     return _GreffQueryOP(_GraphqlQueryOperationType.INLINE_FRAGMENT, model=model)
 
 
 class Query:
-    def __init__(self, query: Iterable[Iterable[Model, Iterable[GreffModelField]]]) -> None:
+    def __init__(
+        self, query: Iterable[Iterable[Model, Iterable[GreffModelField]]]
+    ) -> None:
         self._query = query
 
     def serialize(self) -> str:
@@ -51,9 +53,7 @@ class Query:
         yield "}"
 
     def _serialize_model_query(
-        self,
-        model_query,
-        sub_field: bool = True
+        self, model_query, sub_field: bool = True
     ) -> Iterable[str]:
         model, fields = model_query
 
@@ -99,7 +99,9 @@ class Query:
 
     def _serialize_query_operation(self, operation: _GreffQueryOP) -> str:
         if operation.op is _GraphqlQueryOperationType.ARGUMENTS:
-            serialized_arguments = ", ".join(f"{k}: \"{v}\"" for k,v in operation.extra.items())
+            serialized_arguments = ", ".join(
+                f'{k}: "{v}"' for k, v in operation.extra.items()
+            )
             return f"{operation.model.__queryname__}({serialized_arguments})"
         if operation.op is _GraphqlQueryOperationType.INLINE_FRAGMENT:
             return f"... {operation.model.__typename__}"
@@ -122,7 +124,9 @@ class QueryResults:
             groups.append(self._iter_model_instances(model_type, model_data))
         return tuple(groups)
 
-    def _iter_model_instances(self, model: type[Model], data: list[dict] | dict) -> Iterable[Model]:
+    def _iter_model_instances(
+        self, model: type[Model], data: list[dict] | dict
+    ) -> Iterable[Model]:
         if isinstance(data, (list, tuple, set, frozenset)):
             for instance_data in data:
                 yield implement_model_instance(model, instance_data)

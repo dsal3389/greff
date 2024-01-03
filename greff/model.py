@@ -12,15 +12,11 @@ class Model(BaseModel):
     __implements__: ClassVar[dict[str, Model]] = {}
 
     query: ClassVar[NamedTuple]
-    model_config = ConfigDict(
-        revalidate_instances="subclass-instances"
-    )
+    model_config = ConfigDict(revalidate_instances="subclass-instances")
 
 
 def define_type(
-    queryname: str = "",
-    mutatename: str = "",
-    typename: str = ""
+    queryname: str = "", mutatename: str = "", typename: str = ""
 ) -> Callable[..., type[Model]]:
     def _define_type_deco(model: type[Model]) -> type[Model]:
         if not issubclass(model, Model):
@@ -42,10 +38,15 @@ def define_type(
 
         graphql_query_fields = {}
         for field_name, pydantic_field_info in model.model_fields.items():
-            graphql_query_fields[field_name] = GreffModelField(field_name, model, pydantic_field_info)
+            graphql_query_fields[field_name] = GreffModelField(
+                field_name, model, pydantic_field_info
+            )
 
-        model_query_nt = namedtuple(f"{model.__name__}Query", graphql_query_fields.keys())
+        model_query_nt = namedtuple(
+            f"{model.__name__}Query", graphql_query_fields.keys()
+        )
         model.query = model_query_nt(**graphql_query_fields)
         model_registry.register_model(model)
         return model
+
     return _define_type_deco

@@ -24,6 +24,8 @@ class GreffModelField:
 
     @property
     def __queryname__(self) -> str:
+        if not self._pydantic_field_info.json_schema_extra:
+            return self.name
         return self._pydantic_field_info.json_schema_extra["queryname"] or self.name
 
 

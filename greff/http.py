@@ -1,4 +1,5 @@
 from .query import Query, QueryResults
+from .exceptions import GreffErrorResponseException
 
 
 class HTTPClient:
@@ -12,4 +13,8 @@ class HTTPClient:
             query = query.serialize()
 
         raw_response = self.request(query)
+        errors = raw_response.get("errors")
+
+        if errors:
+            raise GreffErrorResponseException(errors)
         return QueryResults(raw_response)

@@ -1,5 +1,5 @@
 # greff
-I wanted an animal name, but most of them already used in pypi :(, the name pronounced `greph` 
+I wanted an animal name, but most of them already used in pypi :(, the name pronounced `greph`
 
 ## what is it
 `greff` creates python classes from `graphql` response.
@@ -56,7 +56,7 @@ graphql = MyGraphqlClient()
 # fragment frag on Author {
 #   name
 # }
-# 
+#
 query = graphql.query((
         (ParentAuthor, (
             ParentAuthor.query.name,
@@ -64,7 +64,7 @@ query = graphql.query((
     ),
 )
 
-# graphql response 
+# graphql response
 # {
 #   "data": {
 #     "authors": [
@@ -100,6 +100,5 @@ if you look closely at the response
 }
 ```
 
-`ParentAuthor` is implementor for `Author` and `SmallAuthor` and in our query the `__typename` 
+`ParentAuthor` is implementor for `Author` and `SmallAuthor` and in our query the `__typename`
 returned `Author`, so greff automatically created the correct python instace
-

@@ -17,28 +17,30 @@ class _GraphqlQueryOperationType(enum.Enum):
     FRAGMENT_REF = enum.auto()
 
 
-_GreffQueryOperation = dataclasses.make_dataclass("_GreffQueryOperation", (
-    ("op", _GraphqlQueryOperationType),
-    ("model", Model | GreffModelField),
-    ("extra", dict, dataclasses.field(default_factory=dict))
-))
+_GreffQueryOP = dataclasses.make_dataclass(
+    "_GreffQueryOP",
+    (
+        ("op", _GraphqlQueryOperationType),
+        ("model", Model | GreffModelField),
+        ("extra", dict, dataclasses.field(default_factory=dict)),
+    ),
+)
 
 
-def arguments(
-    model: Model | GreffModelField,
-    **kwargs
-) -> _GreffQueryOperation:
-    return _GreffQueryOperation(op=_GraphqlQueryOperationType.ARGUMENTS, model=model, extra=kwargs)
+def arguments(model: Model | GreffModelField, **kwargs) -> _GreffQueryOP:
+    return _GreffQueryOP(
+        op=_GraphqlQueryOperationType.ARGUMENTS, model=model, extra=kwargs
+    )
 
 
-def on(
-    model: Model | GreffModelField
-) -> _GreffQueryOperation:
-    return _GreffQueryOperation(_GraphqlQueryOperationType.INLINE_FRAGMENT, model=model)
+def on(model: Model | GreffModelField) -> _GreffQueryOP:
+    return _GreffQueryOP(_GraphqlQueryOperationType.INLINE_FRAGMENT, model=model)
 
 
 class Query:
-    def __init__(self, query: Iterable[Iterable[Model, Iterable[GreffModelField]]]) -> None:
+    def __init__(
+        self, query: Iterable[Iterable[Model, Iterable[GreffModelField]]]
+    ) -> None:
         self._query = query
 
     def serialize(self) -> str:
@@ -51,13 +53,11 @@ class Query:
         yield "}"
 
     def _serialize_model_query(
-        self,
-        model_query,
-        sub_field: bool = True
+        self, model_query, sub_field: bool = True
     ) -> Iterable[str]:
         model, fields = model_query
 
-        if isinstance(model, _GreffQueryOperation):
+        if isinstance(model, _GreffQueryOP):
             yield self._serialize_query_operation(model)
         else:
             if inspect.isclass(model) and issubclass(model, Model):
@@ -70,6 +70,11 @@ class Query:
                     raise TypeError(
                         f"query provided a model from field for a root model `{model.model.__name__}.query.{model.name}`"
                     )
+            else:
+                raise TypeError(
+                    f"query got unexpected value of type `{type(model).__name__}`"
+                )
+
             yield model.__queryname__
         yield from self._serialize_fields_list(fields)
 
@@ -83,16 +88,20 @@ class Query:
             else:
                 buf = ","
 
+            yield buf
             if isinstance(field, (tuple, list, set, frozenset)):
-                yield buf
                 yield from self._serialize_model_query(field, sub_field=True)
             elif isinstance(field, GreffModelField):
-                yield buf + field.name
+                yield field.__queryname__
+            elif isinstance(field, str):
+                yield field
         yield ",__typename}"
 
-    def _serialize_query_operation(self, operation: _GreffQueryOperation) -> str:
+    def _serialize_query_operation(self, operation: _GreffQueryOP) -> str:
         if operation.op is _GraphqlQueryOperationType.ARGUMENTS:
-            serialized_arguments = ", ".join(f"{k}: \"{v}\"" for k,v in operation.extra.items())
+            serialized_arguments = ", ".join(
+                f'{k}: "{v}"' for k, v in operation.extra.items()
+            )
             return f"{operation.model.__queryname__}({serialized_arguments})"
         if operation.op is _GraphqlQueryOperationType.INLINE_FRAGMENT:
             return f"... {operation.model.__typename__}"
@@ -107,7 +116,7 @@ class QueryResults:
         return self._data
 
     def groups(self) -> tuple[Iterable[Model], ...]:
-        graphql_data = self.data.get("data")
+        graphql_data = self.data.get("data", {})
         groups = []
 
         for model_name, model_data in graphql_data.items():
@@ -115,7 +124,9 @@ class QueryResults:
             groups.append(self._iter_model_instances(model_type, model_data))
         return tuple(groups)
 
-    def _iter_model_instances(self, model: type[Model], data: list[dict] | dict) -> Iterable[Model]:
+    def _iter_model_instances(
+        self, model: type[Model], data: list[dict] | dict
+    ) -> Iterable[Model]:
         if isinstance(data, (list, tuple, set, frozenset)):
             for instance_data in data:
                 yield implement_model_instance(model, instance_data)

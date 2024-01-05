@@ -55,7 +55,7 @@ books_query = client.query((
     ))
 ))
 ```
-we can see that `client.query` takes a list of lists, each list represent a different type, so here we query `Book` and `People` 
+we can see that `client.query` takes a list of lists, each list represent a different type, so here we query `Book` and `People`
 
 ```py
 my_query = client.query((
@@ -70,7 +70,7 @@ my_query = client.query((
 ))
 ```
 
-#### why is it like this? 
+#### why is it like this?
 well because it keeps the graphql schema of `type{ ...fields }` and it make it programmically easy to add/remove from query
 here is an example
 ```py
@@ -108,7 +108,7 @@ query = client.query(my_query)
 ```
 
 ## query operations?
-`greff` supports the next graphql operations: inline fragments (aka `on`), `fragments` and `arguments` 
+`greff` supports the next graphql operations: inline fragments (aka `on`), `fragments` and `arguments`
 
 the usage is simple, in the case of `arguments` and `on` just wrap your graphql types
 with the `argument` or `on` arugment
@@ -152,7 +152,7 @@ query {
 }
 ```
 
-## fragments 
+## fragments
 fragments are a way allows us to create a schema once and use it
 multiple times in our query, for this, `client.query` takes the `fragments` argument where we define each fragment
 and then we reference it in our query with `fragment_ref`
@@ -193,4 +193,3 @@ fragment bigBook on BigBook {
     big_description
 }
 ```
-

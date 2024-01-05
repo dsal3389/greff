@@ -2,7 +2,7 @@
 the client allows `greff` to send and recv information from the graphql backend
 
 ## implementation
-since graphql client can be different from usage to usage, `greff` does not implement a way to send a 
+since graphql client can be different from usage to usage, `greff` does not implement a way to send a
 data to the graphql backend, this should be implemented by the programmer.
 
 because of it `greff` provide an easy way to implement those client behaviours
@@ -27,8 +27,8 @@ graphql_client = greff.Client(query_request=_request_graphql)
 ```
 
 ## class
-if you need more control or don't want to pass functions you can implement 
-your client with `ClientProtocol` 
+if you need more control or don't want to pass functions you can implement
+your client with `ClientProtocol`
 
 ```py
 import requests
@@ -40,7 +40,7 @@ class MyCustomClient(greff.ClientProtocol):
         response = requests.post("http://localhost:8000/graphql", json={"query": query}, verify=False)
         response.raise_for_status()
         return response.json()
-    
+
 
 client = MyCustomClient()
 ```

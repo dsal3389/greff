@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import namedtuple
-from typing import ClassVar, Callable, NamedTuple
+from typing import ClassVar, Callable, NamedTuple, Optional
 from pydantic import BaseModel, ConfigDict
 
 from .registry import model_registry
@@ -60,44 +60,49 @@ class Model(BaseModel):
 
 
 def define_type(
-    queryname: str = "", mutatename: str = "", typename: str = ""
+    cls: Optional[type[Model]] = None,
+    /,
+    *,
+    queryname: str = "",
+    mutatename: str = "",
+    typename: str = "",
 ) -> Callable[..., type[Model]]:
     """
     model decorator that defines the given model as a graphql entry type that
     we can query / mutate
     """
 
-    def _define_type_deco(model: type[Model]) -> type[Model]:
-        if not issubclass(model, Model):
+    def _define_type_deco(cls: type[Model]) -> type[Model]:
+        if not issubclass(cls, Model):
             raise TypeError(
                 f"`define_type` cannot run on classes that does not implement from `greff.Model`"
             )
 
-        model.__queryname__ = queryname
-        model.__mutatename__ = mutatename
+        cls.__queryname__ = queryname
+        cls.__mutatename__ = mutatename
 
         if typename:
-            model.__typename__ = typename
+            cls.__typename__ = typename
         else:
-            model.__typename__ = model.__name__.title()
+            cls.__typename__ = cls.__name__.title()
 
-        for parent in model.__mro__[1:]:
+        for parent in cls.__mro__[1:]:
             if issubclass(parent, Model):
-                parent.__implements__[model.__typename__] = model
+                parent.__implements__[cls.__typename__] = cls
 
         graphql_query_fields = {}
-        for field_name, pydantic_field_info in model.model_fields.items():
+        for field_name, pydantic_field_info in cls.model_fields.items():
             graphql_query_fields[field_name] = GreffModelField(
-                field_name, model, pydantic_field_info
+                field_name, cls, pydantic_field_info
             )
 
-        model_query_nt = namedtuple(
-            f"{model.__name__}Query", graphql_query_fields.keys()
-        )
-        model.query = model_query_nt(**graphql_query_fields)
-        model_registry.register_model(model)
-        return model
+        model_query_nt = namedtuple(f"{cls.__name__}Query", graphql_query_fields.keys())
+        cls.query = model_query_nt(**graphql_query_fields)
+        model_registry.register_model(cls)
+        return cls
 
+    if cls is not None:
+        return _define_type_deco(cls)
     return _define_type_deco
 
 

@@ -49,33 +49,15 @@ class Query:
     def _serialize(self) -> Iterable[str]:
         yield "query {"
         for types_query in self._query:
-            yield from self._serialize_model_query(types_query, sub_field=False)
+            yield from self._serialize_key_field_query(types_query, is_sub_field=False)
         yield "}"
 
-    def _serialize_model_query(
-        self, model_query, sub_field: bool = True
+    def _serialize_key_field_query(
+        self, model_query, is_sub_field: bool = True
     ) -> Iterable[str]:
-        model, fields = model_query
+        key, fields = model_query
 
-        if isinstance(model, _GreffQueryOP):
-            yield self._serialize_query_operation(model)
-        else:
-            if inspect.isclass(model) and issubclass(model, Model):
-                if sub_field:
-                    raise TypeError(
-                        f"given query subfield a root model `{model.__name__}`"
-                    )
-            elif isinstance(model, GreffModelField):
-                if not sub_field:
-                    raise TypeError(
-                        f"query provided a model from field for a root model `{model.model.__name__}.query.{model.name}`"
-                    )
-            else:
-                raise TypeError(
-                    f"query got unexpected value of type `{type(model).__name__}`"
-                )
-
-            yield model.__queryname__
+        yield self._serialize_field_key(key, is_sub_field=is_sub_field)
         yield from self._serialize_fields_list(fields)
 
     def _serialize_fields_list(self, fields) -> Iterable[str]:
@@ -90,12 +72,32 @@ class Query:
 
             yield buf
             if isinstance(field, (tuple, list, set, frozenset)):
-                yield from self._serialize_model_query(field, sub_field=True)
+                yield from self._serialize_key_field_query(field, is_sub_field=True)
             elif isinstance(field, GreffModelField):
                 yield field.__queryname__
             elif isinstance(field, str):
                 yield field
         yield ",__typename}"
+
+    def _serialize_field_key(
+        self, key: Model | GreffModelField, is_sub_field: bool
+    ) -> str:
+        if isinstance(key, _GreffQueryOP):
+            return self._serialize_query_operation(key)
+
+        if inspect.isclass(key) and issubclass(key, Model):
+            if is_sub_field:
+                raise TypeError(f"given query subfield a root model `{key.__name__}`")
+        elif isinstance(key, GreffModelField):
+            if not is_sub_field:
+                raise TypeError(
+                    f"query provided a model from field for a root model `{key.model.__name__}.query.{key.name}`"
+                )
+        else:
+            raise TypeError(
+                f"query got unexpected value of type `{type(key).__name__}`"
+            )
+        return key.__queryname__
 
     def _serialize_query_operation(self, operation: _GreffQueryOP) -> str:
         if operation.op is _GraphqlQueryOperationType.ARGUMENTS:

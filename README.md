@@ -24,12 +24,12 @@ class ParentAuthor(greff.Model):
     age: int = 0
 
 
-@greff.define_type()
+@greff.define_type
 class Author(ParentAuthor):
     extra_field: str
 
 
-@greff.define_type()
+@greff.define_type
 class SimpleAuthor(ParentAuthor):
     pass
 
